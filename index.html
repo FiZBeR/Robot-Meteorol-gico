@@ -1,0 +1,270 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="stylesheet" href="./src/style.css">
+    <title>Robot Meteorológico</title>
+</head>
+<body>
+    <div class="container">
+        <h1>Robot Meteorológico</h1>
+        
+        <div class="robot-container">
+            <div class="robot" id="robot">
+                <div class="face">
+                    <div class="eyes">
+                        <div class="eye"></div>
+                        <div class="eye"></div>
+                    </div>
+                    <div class="mouth">
+                        <div class="mouth-animation"></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="data-container">
+            <div class="data-title">Lectura del Piranómetro</div>
+            <div class="data-value" id="piranoValue">--</div>
+            <div class="data-unit">W/m²</div>
+        </div>
+        
+        <div class="message-container" id="messageContainer">
+            <p>Esperando datos del piranómetro...</p>
+        </div>
+        
+        <button class="btn-speak" id="btnSpeak" disabled>
+            Hablar <span id="loadingIndicator" style="display: none;" class="loading"></span>
+        </button>
+        
+        <div class="button-container">
+            <button class="btn-simulate" id="btnSimulate">
+                Simular datos
+            </button>
+        </div>
+        
+        <footer>
+            <p>Robot Meteorológico © 2025</p>
+        </footer>
+    </div>
+
+    <!-- Firebase App (the core Firebase SDK) -->
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
+    <!-- Firebase Database -->
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-database-compat.js"></script>
+    
+    <script>
+        // Your web app's Firebase configuration
+        const firebaseConfig = {
+          apiKey: "AIzaSyAS61q81Edz6taT1OCVShMBbVSmCZRCcIs",
+          authDomain: "robot-meteorologico.firebaseapp.com",
+          databaseURL: "https://robot-meteorologico-default-rtdb.firebaseio.com",
+          projectId: "robot-meteorologico",
+          storageBucket: "robot-meteorologico.firebasestorage.app",
+          messagingSenderId: "314729113500",
+          appId: "1:314729113500:web:1e55e6fabf547edf194a59"
+        };
+        
+        // Initialize Firebase
+        firebase.initializeApp(firebaseConfig);
+        const database = firebase.database();
+        
+        // Referencias a elementos del DOM
+        const piranoValue = document.getElementById('piranoValue');
+        const messageContainer = document.getElementById('messageContainer');
+        const btnSpeak = document.getElementById('btnSpeak');
+        const loadingIndicator = document.getElementById('loadingIndicator');
+        const robotMouth = document.querySelector('.mouth-animation');
+        
+        // Variable para almacenar el último valor recibido
+        let lastValue = null;
+        let isPlaying = false;
+        
+        // Conectar a Firebase para escuchar cambios en los datos del piranómetro
+        const piranoRef = database.ref('piranometro/valor');
+        piranoRef.on('value', (snapshot) => {
+            const value = snapshot.val();
+            if (value !== null && value !== lastValue) {
+                lastValue = value;
+                updateUI(value);
+            }
+        });
+        
+        // Función para actualizar la UI con el nuevo valor
+        function updateUI(value) {
+            // Actualizar las visualizaciones de valores
+            piranoValue.textContent = value.toFixed(2);
+            
+            // Generar mensaje basado en el rango del valor
+            const message = generateMessage(value);
+            messageContainer.innerHTML = `<p>${message}</p>`;
+            
+            // Habilitar el botón de hablar
+            btnSpeak.disabled = false;
+        }
+        
+        // Función para generar mensajes según el rango del valor del piranómetro
+        function generateMessage(value) {
+            if (value < 100) {
+        return "La radiación solar es muy baja en este momento, registrando menos de 100 vatios/m². Esto indica un cielo densamente nublado o que nos encontramos en horas cercanas al amanecer o atardecer. Las condiciones meteorológicas actuales sugieren alta cobertura de nubes que bloquean casi por completo los rayos solares. Para sistemas fotovoltaicos, la producción energética será mínima, aproximadamente un 10-20% de la capacidad nominal. Si tienes paneles solares, es normal que estén generando muy poca electricidad. En términos agrícolas, estas condiciones de baja luminosidad reducen significativamente la tasa de fotosíntesis en los cultivos";
+    } else if (value < 300) {
+        return "La radiación solar es baja, entre 100 y 300 vatios/m². El cielo probablemente presenta nubosidad considerable o estamos ante condiciones de bruma, niebla o contaminación atmosférica que filtra significativamente los rayos solares. La visibilidad podría estar reducida y se aprecia una luminosidad tenue. Para sistemas fotovoltaicos, estamos operando aproximadamente al 20-40% de la capacidad óptima. Los paneles están produciendo energía, pero notablemente por debajo de su rendimiento máximo. Los sistemas de almacenamiento serán importantes en estas condiciones. En agricultura, estas condiciones de luz difusa pueden ser beneficiosas para ciertos cultivos sensibles a la radiación directa intensa. Las plantas están realizando fotosíntesis a un ritmo moderado. La evapotranspiración es baja, lo que significa menor estrés hídrico pero también menor necesidad de riego. Pronóstico: estas condiciones suelen preceder o seguir a sistemas de lluvia, por lo que conviene estar atento a posibles precipitaciones en las próximas horas. Si realizas actividades al aire libre, la protección solar no es urgente, pero considera llevar ropa adecuada si hay humedad o temperaturas bajas asociadas.";
+    } else if (value < 600) {
+        return "La radiación solar es moderada, entre 300 y 600 vatios/m². El cielo se presenta parcialmente nublado, con nubes dispersas que ocasionalmente bloquean el sol, alternando períodos de luz directa y difusa. La temperatura exterior probablemente sea confortable. Los sistemas fotovoltaicos están operando a un 40-70% de su capacidad máxima, una producción razonable aunque no óptima. Es un buen momento para consumo directo de la energía generada. Para la agricultura, estas condiciones son bastante favorables para la mayoría de cultivos, proporcionando suficiente luz para una buena fotosíntesis sin causar estrés por exceso de radiación. La evapotranspiración es moderada, lo que implica un consumo hídrico equilibrado. Los cultivos de hoja verde y plantas de sombra parcial prosperan especialmente en estas condiciones";
+    } else if (value < 800) {
+        return "La radiación solar es alta, entre 600 y 800 vatios/m². Estamos ante un día mayormente soleado con cielo despejado o apenas algunas nubes dispersas. La temperatura exterior probablemente sea elevada, especialmente en verano. Este nivel de radiación es excelente para sistemas fotovoltaicos, que estarán operando entre el 70% y 90% de su capacidad máxima. Es un momento óptimo para cargar sistemas de almacenamiento o ejecutar electrodomésticos de alto consumo. Si cuentas con sistemas de calentamiento solar de agua, estarán funcionando con gran eficiencia. En el ámbito agrícola, las plantas de sol pleno reciben energía ideal para maximizar su fotosíntesis y crecimiento, aunque aumenta la demanda hídrica. La evapotranspiración es alta, por lo que los cultivos requerirán riego más frecuente";
+    } else if (value < 1000) {
+        return "La radiación solar es muy alta, entre 800 y 100 vatios/m². El cielo está completamente despejado y probablemente nos encontramos cerca del mediodía en un día de verano. La temperatura exterior puede ser elevada, potencialmente alcanzando niveles de ola de calor en ciertas regiones. Los sistemas fotovoltaicos están operando a plena capacidad o muy cerca de ella (90-100%). Es el escenario ideal para la generación de energía solar, momento perfecto para tareas de alto consumo energético. Sin embargo, debes verificar que tus inversores no estén sobrecargados y que la temperatura de los paneles no sea excesiva, pues la eficiencia puede reducirse con el sobrecalentamiento. En agricultura, estas condiciones representan máxima energía disponible para fotosíntesis, pero también riesgo de estrés térmico e hídrico para muchos cultivos";
+    } else {
+        return "La radiación solar es extremadamente alta, superando los 1200 vatios/m². Estas condiciones son excepcionales, típicas del mediodía en regiones ecuatoriales, a gran altitud o en días de verano con cielos excepcionalmente despejados y baja humedad. Estamos recibiendo niveles de radiación cercanos al máximo posible en la superficie terrestre. Los sistemas fotovoltaicos están operando a plena capacidad, aunque existe riesgo de sobrecalentamiento que podría reducir su eficiencia. Es crítico verificar que tus equipos cuenten con ventilación adecuada y que los inversores no estén sobrecargados. Para actividades humanas, el riesgo de quemaduras solares, insolación y golpe de calor es extremo. Se debe evitar completamente la exposición directa al sol, utilizar protección solar SPF 50+ y reaplicarla frecuentemente, sombreros de ala ancha, y mantenerse constantemente hidratadoEn términos de actividades";
+    }
+        }
+        
+        // Función para convertir texto a voz utilizando la API Web Speech (gratuita)
+        function speakText(text) {
+            if ('speechSynthesis' in window) {
+                // Cancelar cualquier reproducción previa antes de iniciar una nueva
+                window.speechSynthesis.cancel();
+                
+                // Dividir el texto en fragmentos más pequeños (aproximadamente 100 caracteres)
+                // para evitar el problema de corte en navegadores
+                const chunks = splitTextIntoChunks(text, 100);
+                let currentChunk = 0;
+                
+                function speakNextChunk() {
+                    if (currentChunk < chunks.length) {
+                        const utterance = new SpeechSynthesisUtterance(chunks[currentChunk]);
+                        utterance.lang = 'es-ES';
+                        utterance.rate = 0.9; // un poco más lento para mayor claridad
+                        
+                        // Solo mostramos la animación mientras hay chunks por reproducir
+                        robotMouth.classList.add('speaking');
+                        
+                        // Cuando termina este fragmento, reproducir el siguiente
+                        utterance.onend = () => {
+                            currentChunk++;
+                            speakNextChunk();
+                        };
+                        
+                        // En caso de error, intentar continuar con el siguiente fragmento
+                        utterance.onerror = (event) => {
+                            console.error("Error en la síntesis de voz:", event);
+                            currentChunk++;
+                            speakNextChunk();
+                        };
+                        
+                        window.speechSynthesis.speak(utterance);
+                    } else {
+                        // Ya se han reproducido todos los fragmentos
+                        isPlaying = false;
+                        robotMouth.classList.remove('speaking');
+                        btnSpeak.disabled = false;
+                        loadingIndicator.style.display = 'none';
+                    }
+                }
+                
+                // Iniciar la reproducción con el primer fragmento
+                isPlaying = true;
+                btnSpeak.disabled = true;
+                loadingIndicator.style.display = 'none';
+                speakNextChunk();
+                
+            } else {
+                alert("Tu navegador no soporta la API de síntesis de voz.");
+                loadingIndicator.style.display = 'none';
+                btnSpeak.disabled = false;
+            }
+        }
+        
+        // Función para dividir el texto en fragmentos más pequeños
+        function splitTextIntoChunks(text, maxLength) {
+            const chunks = [];
+            
+            // Dividir por frases (puntos, signos de interrogación o exclamación)
+            const sentences = text.split(/(?<=[.!?])\s+/);
+            
+            let currentChunk = "";
+            
+            for (const sentence of sentences) {
+                // Si la frase es muy larga, dividirla por comas
+                if (sentence.length > maxLength) {
+                    const subParts = sentence.split(/(?<=,)\s+/);
+                    
+                    for (const part of subParts) {
+                        if (currentChunk.length + part.length <= maxLength) {
+                            currentChunk += (currentChunk ? " " : "") + part;
+                        } else {
+                            if (currentChunk) {
+                                chunks.push(currentChunk);
+                            }
+                            
+                            // Si el fragmento es aún muy largo, dividirlo arbitrariamente
+                            if (part.length > maxLength) {
+                                let remainingPart = part;
+                                while (remainingPart.length > 0) {
+                                    const chunk = remainingPart.slice(0, maxLength);
+                                    chunks.push(chunk);
+                                    remainingPart = remainingPart.slice(maxLength);
+                                }
+                                currentChunk = "";
+                            } else {
+                                currentChunk = part;
+                            }
+                        }
+                    }
+                } else {
+                    // Chequear si cabe en el chunk actual
+                    if (currentChunk.length + sentence.length <= maxLength) {
+                        currentChunk += (currentChunk ? " " : "") + sentence;
+                    } else {
+                        chunks.push(currentChunk);
+                        currentChunk = sentence;
+                    }
+                }
+            }
+            
+            // Agregar el último chunk si contiene texto
+            if (currentChunk) {
+                chunks.push(currentChunk);
+            }
+            
+            return chunks;
+        }
+        
+        // Configurar el evento de clic para el botón de hablar
+        btnSpeak.addEventListener('click', () => {
+            if (lastValue !== null) {
+                loadingIndicator.style.display = 'inline-block';
+                btnSpeak.disabled = true;
+                
+                // Obtener el texto del mensaje
+                const message = messageContainer.textContent;
+                
+                // Pequeño retraso para dar efecto visual
+                setTimeout(() => {
+                    speakText(message);
+                }, 500);
+            }
+        });
+        
+        // Simulación para pruebas
+        function simulateData() {
+            const randomValue = Math.random() * 1200;
+            database.ref('piranometro/valor').set(randomValue)
+                .then(() => {
+                    console.log('Valor simulado enviado con éxito:', randomValue.toFixed(2));
+                })
+                .catch((error) => {
+                    console.error('Error al enviar valor simulado:', error);
+                    alert('Error al enviar valor simulado. Revisa la consola para más detalles.');
+                });
+        }
+        
+        // Configurar el botón de simulación
+        document.getElementById('btnSimulate').addEventListener('click', () => {
+            simulateData();
+        });
+    </script>
+</body>
+</html>
