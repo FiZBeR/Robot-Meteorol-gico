@@ -10,7 +10,7 @@ Este proyecto conecta un microcontrolador **ESP32** con **Firebase** para enviar
 
 ## 🛠️ Tecnologías utilizadas
 
-- **ESP32** (programado con Arduino IDE o C++)
+- **ESP32** (programado con Arduino IDE)
 - **Firebase** (Realtime Database o Firestore)
 - **HTML**, **CSS** y **JavaScript** para el frontend
 
